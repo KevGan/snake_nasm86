@@ -570,21 +570,19 @@ check_food:
     ; ¡Comió comida!
     inc word [score]
     
-    ; Crecer serpiente si no ha alcanzado el máximo
+    ; Verificar si ya está en longitud máxima
     cmp byte [snake_length], MAX_LEN
-    jae .max_length_reached
+    jae .victory                ; Ya en máximo = victoria
     
+    ; Crecer serpiente
     inc byte [snake_length]
     
     ; Verificar si alcanzó la longitud máxima para victoria
     cmp byte [snake_length], MAX_LEN
     je .victory
     
+    ; Si no alcanzó el máximo, colocar nueva comida
     jmp .place_new_food
-
-.max_length_reached:
-    ; Ya está en longitud máxima, verificar victoria
-    ; (Este caso ocurre si ya estaba en MAX_LEN)
 
 .victory:
     ; ¡Victoria! La serpiente alcanzó longitud máxima
@@ -678,8 +676,8 @@ draw_snake:
     push dx
     push si
     
-    movzx cx, byte [snake_length]
-    xor si, si
+    xor si, si                      ; SI = índice actual * 2 (offset en bytes)
+    movzx cx, byte [snake_length]   ; CX = número de segmentos a dibujar
 
 .draw_loop:
     cmp cx, 0
@@ -692,41 +690,32 @@ draw_snake:
     mov dl, al
     call set_cursor
     
-    ; Dibujar segmento
+    ; Guardar contador en stack antes de usar CX para BIOS
+    push cx
+    
+    ; Dibujar segmento (cabeza o cuerpo)
+    mov ah, 09h
     cmp si, 0
-    je .draw_head
+    jne .draw_body
     
-    ; Cuerpo
-    mov ah, 09h
-    mov al, 'o'
-    mov bh, 0
-    mov bl, COLOR_SNAKE
-    mov cx, 1
-    int 10h
-    jmp .next_segment
-
-.draw_head:
-    ; Cabeza
-    mov ah, 09h
+    ; Cabeza (primer segmento)
     mov al, '@'
+    jmp .do_draw
+
+.draw_body:
+    ; Cuerpo
+    mov al, 'o'
+
+.do_draw:
     mov bh, 0
     mov bl, COLOR_SNAKE
     mov cx, 1
     int 10h
-
-.next_segment:
-    add si, 2
-    mov cx, [snake_length]
-    sub cx, si
-    shr cx, 1
-    inc cx
-    dec cx
     
-    ; Recalcular contador
-    mov ax, si
-    shr ax, 1
-    movzx cx, byte [snake_length]
-    sub cx, ax
+    ; Restaurar contador y avanzar al siguiente segmento
+    pop cx
+    add si, 2
+    dec cx
     jmp .draw_loop
 
 .done:
