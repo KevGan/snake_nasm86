@@ -54,6 +54,10 @@ STATE_MENU      equ 0
 STATE_PLAYING   equ 1
 STATE_GAMEOVER  equ 2
 STATE_VICTORY   equ 3
+STATE_ESC       equ 0FFh    ; Estado especial para ESC
+
+; Límite de intentos para colocar comida
+MAX_FOOD_ATTEMPTS equ 100
 
 ; =============================================================================
 ; Inicio del programa
@@ -383,7 +387,7 @@ process_input:
     jmp .no_key
 
 .escape:
-    mov byte [game_over_flag], 0FFh     ; Código especial para ESC
+    mov byte [game_over_flag], STATE_ESC    ; Estado especial para ESC
     jmp .done
 
 .up:
@@ -580,9 +584,9 @@ check_food:
     ; ¡Comió comida!
     inc word [score]
     
-    ; Verificar si ya está en longitud máxima (no puede crecer más)
+    ; Verificar si ya está en longitud máxima (caso de seguridad)
     cmp byte [snake_length], MAX_LEN
-    jae .victory                ; Ya en máximo = victoria (no debería pasar normalmente)
+    je .victory                 ; Ya en MAX_LEN exacto = victoria
     
     ; Crecer serpiente (aún no está en máximo)
     inc byte [snake_length]
@@ -618,7 +622,7 @@ place_food_random:
     push dx
     push si
     
-    mov byte [retry_counter], 100   ; Máximo 100 intentos
+    mov byte [retry_counter], MAX_FOOD_ATTEMPTS   ; Máximo de intentos
 
 .try_place:
     ; Verificar contador de reintentos
