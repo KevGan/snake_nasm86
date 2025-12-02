@@ -584,11 +584,10 @@ check_food:
     ; ¡Comió comida!
     inc word [score]
     
-    ; Verificar si ya está en longitud máxima (caso de seguridad)
+    ; Crecer serpiente si no está en máximo
     cmp byte [snake_length], MAX_LEN
-    je .victory                 ; Ya en MAX_LEN exacto = victoria
+    jae .place_new_food         ; Si ya está en máximo, no crecer pero colocar nueva comida
     
-    ; Crecer serpiente (aún no está en máximo)
     inc byte [snake_length]
     
     ; Verificar si ahora alcanzó la longitud máxima para victoria
@@ -596,7 +595,6 @@ check_food:
     jne .place_new_food         ; Si no es máximo, colocar nueva comida
     
     ; Alcanzó exactamente MAX_LEN = victoria
-.victory:
     mov byte [game_over_flag], STATE_VICTORY
     call update_high_score
     jmp .done
@@ -1096,7 +1094,7 @@ print_number:
     
 .print_spaces:
     cmp cx, 0
-    jle .print_digits
+    jbe .print_digits       ; Si CX <= 0 (unsigned), no imprimir espacios
     
     mov ah, 0Eh
     mov al, ' '             ; Espacio en lugar de cero a la izquierda
