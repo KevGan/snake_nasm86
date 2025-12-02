@@ -15,6 +15,16 @@ COLS        equ 80          ; Columnas de la pantalla
 MAX_LEN     equ 32          ; Longitud máxima de la serpiente
 START_LEN   equ 3           ; Longitud inicial de la serpiente
 
+; Área jugable (dentro de los bordes)
+PLAY_MIN_ROW equ 4          ; Fila mínima jugable
+PLAY_MAX_ROW equ 22         ; Fila máxima jugable
+PLAY_MIN_COL equ 2          ; Columna mínima jugable
+PLAY_MAX_COL equ 77         ; Columna máxima jugable
+
+; Centro del área de juego (para posición inicial y fallback)
+CENTER_X     equ 40
+CENTER_Y     equ 13
+
 ; Direcciones
 DIR_UP      equ 0
 DIR_DOWN    equ 1
@@ -496,22 +506,22 @@ check_collision:
     mov ax, [snake_y]       ; BL = fila
     mov bx, ax
     
-    ; Verificar colisión con bordes
-    ; Fila 3 es borde superior, no jugable - si <= 3 es colisión
-    cmp bl, 3
-    jbe .hit                ; Corregido: jbe en lugar de jb
+    ; Verificar colisión con bordes usando constantes
+    ; Si la posición es menor que el área jugable mínima = colisión
+    cmp bl, PLAY_MIN_ROW
+    jb .hit
     
-    ; Fila 23 es borde inferior, no jugable - si >= 23 es colisión
-    cmp bl, 23
-    jae .hit
+    ; Si la posición es mayor que el área jugable máxima = colisión
+    cmp bl, PLAY_MAX_ROW
+    ja .hit
     
-    ; Columna 1 es borde izquierdo, no jugable - si <= 1 es colisión
-    cmp dl, 1
-    jbe .hit                ; Corregido: jbe en lugar de jb
+    ; Si la columna es menor que el área jugable mínima = colisión
+    cmp dl, PLAY_MIN_COL
+    jb .hit
     
-    ; Columna 78 es borde derecho, no jugable - si >= 78 es colisión
-    cmp dl, 78
-    jae .hit
+    ; Si la columna es mayor que el área jugable máxima = colisión
+    cmp dl, PLAY_MAX_COL
+    ja .hit
     
     ; Verificar colisión con cuerpo
     movzx cx, byte [snake_length]
@@ -570,22 +580,19 @@ check_food:
     ; ¡Comió comida!
     inc word [score]
     
-    ; Verificar si ya está en longitud máxima
+    ; Verificar si ya está en longitud máxima (no puede crecer más)
     cmp byte [snake_length], MAX_LEN
-    jae .victory                ; Ya en máximo = victoria
+    jae .victory                ; Ya en máximo = victoria (no debería pasar normalmente)
     
-    ; Crecer serpiente
+    ; Crecer serpiente (aún no está en máximo)
     inc byte [snake_length]
     
-    ; Verificar si alcanzó la longitud máxima para victoria
+    ; Verificar si ahora alcanzó la longitud máxima para victoria
     cmp byte [snake_length], MAX_LEN
-    je .victory
+    jne .place_new_food         ; Si no es máximo, colocar nueva comida
     
-    ; Si no alcanzó el máximo, colocar nueva comida
-    jmp .place_new_food
-
+    ; Alcanzó exactamente MAX_LEN = victoria
 .victory:
-    ; ¡Victoria! La serpiente alcanzó longitud máxima
     mov byte [game_over_flag], STATE_VICTORY
     call update_high_score
     jmp .done
@@ -619,16 +626,16 @@ place_food_random:
     cmp byte [retry_counter], 0
     je .force_place             ; Si se agotaron los intentos, forzar colocación
     
-    ; Generar posición X aleatoria (columnas 2-77)
-    mov cx, 76                  ; Rango: 0-75
+    ; Generar posición X aleatoria usando constantes
+    mov cx, PLAY_MAX_COL - PLAY_MIN_COL + 1  ; Rango: 0-(MAX-MIN)
     call random_range
-    add ax, 2                   ; Ajustar a columnas 2-77
+    add ax, PLAY_MIN_COL        ; Ajustar a rango válido
     mov [food_x], ax
     
-    ; Generar posición Y aleatoria (filas 4-22)
-    mov cx, 19                  ; Rango: 0-18
+    ; Generar posición Y aleatoria usando constantes
+    mov cx, PLAY_MAX_ROW - PLAY_MIN_ROW + 1  ; Rango: 0-(MAX-MIN)
     call random_range
-    add ax, 4                   ; Ajustar a filas 4-22
+    add ax, PLAY_MIN_ROW        ; Ajustar a rango válido
     mov [food_y], ax
     
     ; Verificar que no esté sobre la serpiente
@@ -654,9 +661,9 @@ place_food_random:
 
 .force_place:
     ; Forzar colocación en posición fija si se agotaron los intentos
-    ; Esto evita un bucle infinito cuando la serpiente ocupa casi todo el espacio
-    mov word [food_x], 40
-    mov word [food_y], 10
+    ; Usa constantes del centro del área de juego
+    mov word [food_x], CENTER_X
+    mov word [food_y], CENTER_Y
 
 .valid_position:
     pop si
