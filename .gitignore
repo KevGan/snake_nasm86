@@ -1,0 +1,14 @@
+# Build outputs
+*.com
+*.exe
+*.bin
+
+# Temporary files
+*.tmp
+*~
+
+# Editor files
+*.swp
+*.swo
+.vscode/
+.idea/
