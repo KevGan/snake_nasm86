@@ -1147,10 +1147,10 @@ game_delay:
     push dx
     
     ; Usar delay del BIOS (int 15h, ah=86h)
-    ; CX:DX = tiempo en microsegundos
-    ; CX=1, DX=0x86A0 = 100000 microsegundos = 100ms
-    mov cx, 1
-    mov dx, 86A0h           ; 100000 microsegundos = 100ms
+    ; CX:DX = tiempo en microsegundos (valor de 32 bits)
+    ; 0x186A0 = 100000 decimal = 100ms
+    mov cx, 1               ; Parte alta del valor 0x186A0
+    mov dx, 86A0h           ; Parte baja del valor 0x186A0
     mov ah, 86h
     int 15h
     
