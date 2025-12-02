@@ -584,17 +584,23 @@ check_food:
     ; ¡Comió comida!
     inc word [score]
     
-    ; Crecer serpiente si no está en máximo
+    ; Crecer serpiente si no está en máximo (caso de seguridad)
     cmp byte [snake_length], MAX_LEN
-    jae .place_new_food         ; Si ya está en máximo, no crecer pero colocar nueva comida
+    jae .already_max            ; Si ya está en máximo, verificar victoria
     
+    ; Crecer la serpiente
     inc byte [snake_length]
     
     ; Verificar si ahora alcanzó la longitud máxima para victoria
     cmp byte [snake_length], MAX_LEN
-    jne .place_new_food         ; Si no es máximo, colocar nueva comida
+    je .victory                 ; Alcanzó MAX_LEN = victoria
     
-    ; Alcanzó exactamente MAX_LEN = victoria
+    ; Aún no está en máximo, colocar nueva comida
+    jmp .place_new_food
+
+.already_max:
+    ; Ya estaba en MAX_LEN (caso de seguridad que no debería ocurrir normalmente)
+.victory:
     mov byte [game_over_flag], STATE_VICTORY
     call update_high_score
     jmp .done
@@ -1140,9 +1146,11 @@ game_delay:
     push cx
     push dx
     
-    ; Usar delay del BIOS
+    ; Usar delay del BIOS (int 15h, ah=86h)
+    ; CX:DX = tiempo en microsegundos
+    ; CX=1, DX=0x86A0 = 100000 microsegundos = 100ms
     mov cx, 1
-    mov dx, 0A000h          ; Aproximadamente 100ms
+    mov dx, 86A0h           ; 100000 microsegundos = 100ms
     mov ah, 86h
     int 15h
     
